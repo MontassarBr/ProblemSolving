@@ -164,36 +164,29 @@ void solve() {
     vector<vector<int>>pre;
     vector<vector<int>>pre1;
     char cc;
-    cin>>n>>k;
     string s1;
-    cin>>s>>s1;
-    vector<int>occ(26,0);
-    vector<int>occ1(26,0);
-    pre.push_back(occ);
-    pre1.push_back(occ1);
-    for (int j = 0; j <n; j++)
+    cin>>n;
+    if (n==2)
     {
-        occ[s[j]-'a']++;
-        occ1[s1[j]-'a']++;
-        pre.push_back(occ);
-        pre1.push_back(occ1);
+        a=2;
     }
- 
-    for (int i = 0; i <k; i++)
+    else if (n==3)
     {
-        cin>>l>>r;
+        a=3;
+    }
+    
+    else if (n%2==0)
+    {
         a=0;
-        for (int j = 0; j < 26; j++)
-        {
-            if (pre[r][j]-pre[l-1][j]!=pre1[r][j]-pre1[l-1][j])
-            {
-                a+=abs((pre[r][j]-pre[l-1][j])-(pre1[r][j]-pre1[l-1][j]));
-            }
-            
-        }
-        cout<<a/2<<endl;
-        
     }
+    else
+    {
+        a=1;
+    }
+    
+    
+    
+    cout<<a<<endl;;
  
 }
 int main()
