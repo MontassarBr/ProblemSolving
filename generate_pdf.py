@@ -791,6 +791,303 @@ dsu.connected(0, 2);   // false""",
             "Online connectivity queries.",
         ],
     },
+
+    # ── 19. DFS ───────────────────────────────────────────────────────────────
+    {
+        "title": "19. Depth-First Search (DFS)",
+        "description": (
+            "DFS explores a graph by going as deep as possible before backtracking. "
+            "The recursive version is elegant but risks stack overflow on large inputs; "
+            "the iterative version using an explicit stack is always safe. "
+            "DFS is the foundation for cycle detection, topological sort, SCCs, "
+            "biconnected components, and tree traversals."
+        ),
+        "code": """\
+// ── Recursive DFS ─────────────────────────────────────────────────────────────
+const int MAXN = 1e5 + 5;
+vector<int> adj[MAXN];
+bool visited[MAXN];
+
+void dfs(int u) {
+    visited[u] = true;
+    for (int v : adj[u])
+        if (!visited[v])
+            dfs(v);
+}
+
+// ── Iterative DFS (stack-safe for large graphs) ───────────────────────────────
+void dfs_iterative(int src, int n) {
+    vector<bool> vis(n + 1, false);
+    stack<int> st;
+    st.push(src);
+    while (!st.empty()) {
+        int u = st.top(); st.pop();
+        if (vis[u]) continue;
+        vis[u] = true;
+        for (int v : adj[u])
+            if (!vis[v]) st.push(v);
+    }
+}
+
+// ── Cycle detection in directed graph ────────────────────────────────────────
+// color: 0=unvisited, 1=in-stack, 2=done
+vector<int> color;
+bool has_cycle = false;
+void dfs_cycle(int u) {
+    color[u] = 1;
+    for (int v : adj[u]) {
+        if (color[v] == 1) { has_cycle = true; return; }
+        if (color[v] == 0) dfs_cycle(v);
+    }
+    color[u] = 2;
+}
+
+// ── Topological sort (Kahn's BFS alternative uses in-degree) ─────────────────
+vector<int> topo;
+void dfs_topo(int u, vector<bool>& vis) {
+    vis[u] = true;
+    for (int v : adj[u])
+        if (!vis[v]) dfs_topo(v, vis);
+    topo.push_back(u);   // push AFTER all neighbours → reverse topo order
+}
+// After calling for all nodes: reverse(topo.begin(), topo.end());
+
+// ── DFS on a grid (flood fill) ────────────────────────────────────────────────
+int dx[] = {0,0,1,-1};
+int dy[] = {1,-1,0,0};
+void dfs_grid(int r, int c, vector<vector<int>>& grid, vector<vector<bool>>& vis) {
+    int n = grid.size(), m = grid[0].size();
+    vis[r][c] = true;
+    for (int d = 0; d < 4; d++) {
+        int nr = r + dx[d], nc = c + dy[d];
+        if (nr>=0 && nr<n && nc>=0 && nc<m && !vis[nr][nc] && grid[nr][nc]==1)
+            dfs_grid(nr, nc, grid, vis);
+    }
+}""",
+        "use_cases": [
+            "Counting connected components: run DFS from every unvisited node.",
+            "Detecting cycles in directed (coloring) and undirected (parent tracking) graphs.",
+            "Topological sort of a DAG (dependency ordering, task scheduling).",
+            "Flood fill / island counting on 2-D grids.",
+            "Finding Strongly Connected Components (Kosaraju's / Tarjan's).",
+            "Tree traversals: pre-order, in-order, post-order.",
+        ],
+    },
+
+    # ── 20. DIJKSTRA ──────────────────────────────────────────────────────────
+    {
+        "title": "20. Dijkstra's Algorithm (Single-Source Shortest Path)",
+        "description": (
+            "Greedy algorithm using a min-heap (priority_queue) to find the shortest "
+            "path from a source to all vertices in a weighted graph with non-negative edges. "
+            "Time complexity: O((V + E) log V). "
+            "For negative-weight edges use Bellman-Ford; for dense graphs use the O(V^2) matrix version."
+        ),
+        "code": """\
+typedef pair<ll,int> pli;   // {distance, node}
+const ll INF = 1e18;
+
+vector<pair<int,ll>> adj[MAXN];  // adj[u] = {(v, weight), ...}
+
+vector<ll> dijkstra(int src, int n) {
+    vector<ll> dist(n + 1, INF);
+    priority_queue<pli, vector<pli>, greater<pli>> pq;   // min-heap
+    dist[src] = 0;
+    pq.push({0, src});
+
+    while (!pq.empty()) {
+        auto [d, u] = pq.top(); pq.pop();
+        if (d > dist[u]) continue;    // stale entry — skip
+
+        for (auto [v, w] : adj[u]) {
+            if (dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                pq.push({dist[v], v});
+            }
+        }
+    }
+    return dist;   // dist[i] = shortest distance from src to i
+                   // dist[i] == INF means i is unreachable
+}
+
+// ── Path reconstruction ───────────────────────────────────────────────────────
+vector<int> prev_node(n + 1, -1);
+// In the relaxation step, also record:
+//   if (dist[u] + w < dist[v]) { ...; prev_node[v] = u; }
+
+vector<int> get_path(int dst) {
+    vector<int> path;
+    for (int x = dst; x != -1; x = prev_node[x]) path.push_back(x);
+    reverse(path.begin(), path.end());
+    return path;
+}
+
+// ── Build the graph ───────────────────────────────────────────────────────────
+// adj[u].push_back({v, w});   // directed edge u->v with weight w
+// adj[v].push_back({u, w});   // also add for undirected""",
+        "use_cases": [
+            "Shortest path in road/flight networks (non-negative weights).",
+            "0-1 BFS variant: use deque, push front for weight-0 edges.",
+            "Multi-source Dijkstra: push all sources with distance 0 initially.",
+            "Grid shortest path with weighted cells.",
+            "Dijkstra on implicit graphs (state = (position, items_collected)).",
+        ],
+    },
+
+    # ── 21. SPARSE TABLE ──────────────────────────────────────────────────────
+    {
+        "title": "21. Sparse Table (Range Minimum / Maximum Query)",
+        "description": (
+            "Sparse Table pre-processes an array in O(n log n) space and time, "
+            "then answers Range Minimum (or Maximum) Queries in O(1) using the "
+            "overlap property of idempotent operations (min, max, gcd, AND, OR). "
+            "It is read-only — does not support updates. For updates, use a Segment Tree."
+        ),
+        "code": """\
+const int LOG = 20;   // log2(1e6) < 20
+int sparse[LOG][MAXN];
+int lg[MAXN];         // precomputed floor(log2)
+
+void build(vector<int>& a, int n) {
+    // precompute logarithms
+    lg[1] = 0;
+    for (int i = 2; i <= n; i++) lg[i] = lg[i/2] + 1;
+
+    // level 0: each element covers itself
+    for (int i = 0; i < n; i++) sparse[0][i] = a[i];
+
+    // level k: sparse[k][i] = min of a[i .. i + 2^k - 1]
+    for (int k = 1; k < LOG; k++)
+        for (int i = 0; i + (1 << k) <= n; i++)
+            sparse[k][i] = min(sparse[k-1][i],
+                               sparse[k-1][i + (1 << (k-1))]);
+}
+
+// Range Minimum Query [l, r] (0-indexed, inclusive) in O(1)
+int query_min(int l, int r) {
+    int k = lg[r - l + 1];
+    return min(sparse[k][l], sparse[k][r - (1 << k) + 1]);
+}
+
+// Range Maximum Query — change min -> max everywhere above
+
+// ── Range GCD (also idempotent, same O(1) query) ─────────────────────────────
+// sparse[k][i] = gcd(a[i .. i + 2^k - 1])
+// query_gcd(l,r) = gcd(sparse[k][l], sparse[k][r-(1<<k)+1])""",
+        "use_cases": [
+            "Range Minimum / Maximum Query with no updates (static array).",
+            "Lowest Common Ancestor (LCA) via Euler tour + RMQ.",
+            "Range GCD / AND / OR queries in O(1).",
+            "Faster than Segment Tree when queries >> updates (or no updates).",
+            "Cartesian tree construction from inorder traversal.",
+        ],
+    },
+
+    # ── 22. SEGMENT TREE ──────────────────────────────────────────────────────
+    {
+        "title": "22. Segment Tree (Point Update + Range Query, with Lazy Propagation)",
+        "description": (
+            "A Segment Tree stores an array in a binary tree structure, enabling "
+            "both point/range updates and range queries in O(log n). "
+            "Lazy propagation defers updates to avoid redundant work, "
+            "keeping range updates at O(log n) as well. "
+            "The iterative (bottom-up) version is faster in practice; "
+            "the recursive version is easier to extend."
+        ),
+        "code": """\
+// ── Iterative Segment Tree (Range Sum, Point Update) ────────────────────────
+struct SegTree {
+    int n;
+    vector<ll> tree;
+
+    SegTree(int n) : n(n), tree(2 * n, 0) {}
+
+    // Build from array a (0-indexed)
+    void build(vector<ll>& a) {
+        for (int i = 0; i < n; i++) tree[i + n] = a[i];
+        for (int i = n - 1; i > 0; i--) tree[i] = tree[2*i] + tree[2*i+1];
+    }
+
+    // Point update: a[pos] += val
+    void update(int pos, ll val) {
+        pos += n;
+        tree[pos] += val;
+        for (pos >>= 1; pos >= 1; pos >>= 1)
+            tree[pos] = tree[2*pos] + tree[2*pos+1];
+    }
+
+    // Range sum query [l, r] (0-indexed, inclusive)
+    ll query(int l, int r) {
+        ll res = 0;
+        for (l += n, r += n + 1; l < r; l >>= 1, r >>= 1) {
+            if (l & 1) res += tree[l++];
+            if (r & 1) res += tree[--r];
+        }
+        return res;
+    }
+};
+
+// ── Recursive Segment Tree with Lazy Propagation (Range Update, Range Query) ─
+struct LazySegTree {
+    int n;
+    vector<ll> tree, lazy;
+
+    LazySegTree(int n) : n(n), tree(4*n, 0), lazy(4*n, 0) {}
+
+    void push_down(int node, int lo, int hi) {
+        if (lazy[node]) {
+            int mid = (lo + hi) / 2;
+            tree[2*node]   += lazy[node] * (mid - lo + 1);
+            tree[2*node+1] += lazy[node] * (hi - mid);
+            lazy[2*node]   += lazy[node];
+            lazy[2*node+1] += lazy[node];
+            lazy[node] = 0;
+        }
+    }
+
+    // Range add: add val to all a[l..r]
+    void update(int node, int lo, int hi, int l, int r, ll val) {
+        if (r < lo || hi < l) return;
+        if (l <= lo && hi <= r) {
+            tree[node] += val * (hi - lo + 1);
+            lazy[node] += val;
+            return;
+        }
+        push_down(node, lo, hi);
+        int mid = (lo + hi) / 2;
+        update(2*node,   lo,    mid, l, r, val);
+        update(2*node+1, mid+1, hi,  l, r, val);
+        tree[node] = tree[2*node] + tree[2*node+1];
+    }
+
+    // Range sum query [l, r]
+    ll query(int node, int lo, int hi, int l, int r) {
+        if (r < lo || hi < l) return 0;
+        if (l <= lo && hi <= r) return tree[node];
+        push_down(node, lo, hi);
+        int mid = (lo + hi) / 2;
+        return query(2*node,   lo,    mid, l, r)
+             + query(2*node+1, mid+1, hi,  l, r);
+    }
+
+    // Public interface wrappers (1-indexed):
+    void update(int l, int r, ll val) { update(1, 1, n, l, r, val); }
+    ll   query (int l, int r)         { return query(1, 1, n, l, r); }
+};
+
+// Usage:
+// LazySegTree st(n);
+// st.update(2, 5, 3);   // add 3 to a[2..5]
+// st.query(1, 6);       // sum of a[1..6]""",
+        "use_cases": [
+            "Range sum / min / max with point or range updates.",
+            "Count of elements in a range satisfying a condition.",
+            "Inversion count using merge sort or BIT/Fenwick.",
+            "Range assignment, range XOR, range product — change the combine function.",
+            "2D Segment Tree for 2D range queries.",
+            "Persistent Segment Tree for historical queries.",
+        ],
+    },
 ]
 
 # ── CP TRICKS ─────────────────────────────────────────────────────────────────
