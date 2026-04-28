@@ -162,55 +162,62 @@ ll ans=INF;
 vector<ll>dp(1000000,-1);
 vector<ll>vis(1000000,0);
 vector<vector<ll>>adj(1000000);
-ll dfs(ll u,ll p){
-// If the node has only one neighbor and it's not the starting node, 
-    // it's a leaf.
-    // Special case: if the tree has only one node, that node is a leaf.
+void dfs(ll u,ll p){
     if (adj[u].size() == 1 && p != -1) {
-        return 1;
+         c++;
+         return;
     }
-    
-    // If the starting node (p == -1) has no neighbors, it's a single-node tree.
-    if (adj[u].empty()) {
-        return 1;
-    }
-
-    ll leaf_count = 0;
-    for (auto v : adj[u]) {
-        if (v != p) { // Don't go back to the parent
-            leaf_count += dfs(v, u);
+    for (auto v:adj[u]) {
+        if (v!=p) {
+            dfs(v,u);
         }
     }
-    
-    return leaf_count;
 }
 
 void solve() {
-    r = 0; 
-    o = 0; 
-    if (!(cin >> n)) return;
-    adj.assign(n, vector<ll>()); 
-    for (int i = 0; i < n - 1; i++) {
-        cin >> a >> b;
-        a--; b--; 
-        adj[a].push_back(b);
-        adj[b].push_back(a);
-    }
-
+    string s;
+    string s1;
+    string s2;
+    string s3;
+    v.clear();
+    v2.clear();
+    char cc;
+    priority_queue<ll>pp;
+    set<ll>st;
+    vector<pair<ll,ll>>v1;
+    vector<ll>v0;
+    map<ll,ll>mp;
+    unordered_map<ll,ll,custom_hash>mp1;
+    cin>>n;
     for (int i = 0; i < n; i++) {
-        ll current_leaf_neighbors = 0;
-        for (auto neighbor : adj[i]) {
-            if (adj[neighbor].size() == 1) {
-                current_leaf_neighbors++;
-            }
-        }
-        
-        if (current_leaf_neighbors > r) {
-            r = current_leaf_neighbors;
-            o = i;
-        }
+    adj[i].clear();
     }
-    cout<<dfs(o,-1)-r<<endl;
+    for (int i = 0; i < n-1; i++)
+   {
+    cin>>a>>b;
+    a--;
+    b--;
+    adj[a].push_back(b);
+    adj[b].push_back(a);
+   }
+    l=0;
+    r=0;
+    o=0;
+    c=0;
+   for (int i = 0; i < n; i++)
+   {
+    l=0;
+    for(auto el:adj[i]) 
+    {
+       if(adj[el].size()==1) l++;
+    }
+    if(l>r){
+        r=l;
+        o=i;
+    }
+   }
+   dfs(o,-1);
+   cout<<c-r<<endl;
 }
 int main()
 {
